@@ -1,0 +1,35 @@
+services:
+  bot:
+    build: ./bot
+    container_name: bot
+    restart: unless-stopped
+    env_file: ./env/.bot_env
+    networks:
+      - bot_network
+
+  webserver:
+    build: ./web
+    container_name: webserver
+    restart: unless-stopped
+    env_file: ./env/.web_env
+    ports:
+      - "80:3000"
+    networks:
+      - web_network
+
+  database:
+    image: mariadb:latest
+    env_file: ./env/.db_env
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - bot_network
+      - web_network
+
+volumes:
+  mariadb-data:
+
+networks:
+  bot_network:
+  web_network:
+
