@@ -4,6 +4,9 @@ services:
     container_name: bot
     restart: unless-stopped
     env_file: ./env/.bot_env
+    depends_on:
+      database:
+        condition: service_healthy
     networks:
       - bot_network
 
@@ -12,6 +15,9 @@ services:
     container_name: webserver
     restart: unless-stopped
     env_file: ./env/.web_env
+    depends_on:
+      database:
+        condition: service_healthy
     ports:
       - "80:3000"
     networks:
@@ -20,11 +26,20 @@ services:
   database:
     image: mariadb:latest
     env_file: ./env/.db_env
+    container_name: database
+    restart: unless-stopped
     volumes:
       - mariadb-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - bot_network
       - web_network
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s      
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
 volumes:
   mariadb-data:
