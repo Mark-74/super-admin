@@ -16,9 +16,10 @@ app.set('views', path.join(__dirname, 'templates'));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
 
 app.get('/', (req, res) => {
-  res.render('index');
+  res.render('index', { title: 'index' });
 });
 
 const PORT = 3000;
