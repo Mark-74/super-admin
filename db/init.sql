@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS servers (
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
-CREATE TABLE server_preferences (
+CREATE TABLE IF NOT EXISTS server_preferences (
     id INT AUTO_INCREMENT PRIMARY KEY,
     server_id INT NOT NULL,
     preferences JSON NOT NULL,

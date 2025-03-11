@@ -1,0 +1,9 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <h1>Register</h1>
+  <p>Please provide a username and password.</p>
+  <%- include('partials/form', { callback: '/register', button: 'register' }) %>
+</div>
+
+<%- include('partials/footer') %>
