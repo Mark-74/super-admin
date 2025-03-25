@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS servers (
 CREATE TABLE IF NOT EXISTS server_preferences (
     id INT AUTO_INCREMENT PRIMARY KEY,
     server_id INT NOT NULL,
-    preferences JSON NOT NULL,
+    name VARCHAR(32) NOT NULL,
+    preference JSON NOT NULL,
     
     FOREIGN KEY (server_id) REFERENCES servers(id)
 );
