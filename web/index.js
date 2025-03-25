@@ -5,10 +5,12 @@ const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const { register, login } = require('./utils/db')
+const { register, login } = require('./utils/db');
+const { error } = require('console');
+const crypto = require('crypto');
 
 const app = express();
-const KEY = process.env.SECRET_KEY;
+const KEY = process.env.SECRET_KEY || crypto.randomBytes(32).toString('hex');
 
 //setup ejs for templates and templates folder
 app.set('view engine', 'ejs');
@@ -33,7 +35,7 @@ app.post('/login', async (req, res) => {
   const success = await login(username, password);
 
   if (!success) {
-    res.redirect('/login');
+    res.render('login', { title: 'register', error: true, error_message: "Invalid username or password" });
     return;
   }
 
@@ -53,7 +55,7 @@ app.post('/register', async (req, res) => {
   const success = await register(username, password);
 
   if (!success) {
-    res.redirect('/register');
+    res.render('register', { title: 'register', error: true, error_message: "Username already in use" });
     return;
   }
 

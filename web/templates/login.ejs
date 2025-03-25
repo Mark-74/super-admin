@@ -1,9 +1,10 @@
 <%- include('partials/header') %>
 
-<div class="container">
-  <h1>Login</h1>
-  <p>Please insert your username and password.</p>
-  <%- include('partials/form', { callback: '/login', button: 'login' }) %>
-</div>
+<h1>Login</h1>
+<p>Please insert your username and password.</p>
+<% if (typeof error !== 'undefined' && error) { %>
+  <%- include('partials/error', {message: error_message}) %>
+<% } %>
+<%- include('partials/form', { callback: '/login', button: 'Login' }) %>
 
 <%- include('partials/footer') %>
