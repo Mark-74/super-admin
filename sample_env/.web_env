@@ -3,3 +3,7 @@ DB_HOST: database
 DB_USER: www
 DB_PASSWORD: wwwpassword
 DB_NAME: super_admin
+API_ENDPOINT: https://discord.com/api/v10
+CLIENT_ID: 1234
+CLIENT_SECRET: 1234
+REDIRECT_URI: https://change.me

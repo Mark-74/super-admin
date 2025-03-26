@@ -21,42 +21,38 @@ async function getConnection(){
     }
 }
 
-async function register(username, password) {
+// User tokens region start
+
+async function insertNewUserTokens(access_token, refresh_token, expires_in) {
     let conn;
     try {
         conn = await getConnection();
 
-        const res = await conn.query('SELECT id FROM users WHERE username = ?', [username]);
-        if (res.length > 0) {
-            console.log('User already exists');
-            return false;
-        } else {
-            const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-            await conn.query('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+        const expirationDate = new Date(Date.now() + expires_in * 1000);
+        const formattedExpiration = expirationDate.toISOString().slice(0, 19).replace('T', ' ');
+        
+        try {
+            await conn.query('INSERT INTO users (access_token, refresh_token, expires_at) VALUES (?, ?, ?)', [access_token, refresh_token, formattedExpiration]);
+        } catch (err) {
+            console.log(err);
+        }
+        
 
-            console.log('User registered');
-            return true;
-        }        
     } catch (err) {
-        console.error(err);
+        console.log(err);
     } finally {
         if (conn) conn.release();
     }
 }
 
-async function login(username, password) {
+async function getTokensFromUserId(id) {
     let conn;
-    try {
+    try{
         conn = await getConnection();
 
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
-        const res = await conn.query('SELECT id FROM users WHERE username = ? AND password = ?', [username, hashedPassword]);
+        const res = await conn.query('SELECT access_token, refresh_token, expires_at FROM users WHERE id = ?', [id]);
         if (res.length > 0) {
-            console.log('User logged in');
-            return true;
-        } else {
-            console.log('Invalid credentials');
-            return false;
+            return res[0];
         }
     } catch (err) {
         console.error(err);
@@ -65,5 +61,51 @@ async function login(username, password) {
     }
 }
 
+async function getIdFromAccessToken(access_token) {
+    let conn;
+    try {
+        conn = await getConnection();
 
-module.exports = { register, login, };
+        const res = await conn.query('SELECT id FROM users WHERE access_token = ?', [access_token]);
+        if (res.length > 0) {
+            return res[0].id;
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function getIdFromRefreshToken(refresh_token) {
+    let conn;
+    try {
+        conn = await getConnection();
+
+        const res = await conn.query('SELECT id FROM users WHERE refresh_token = ?', [refresh_token]);
+        if (res.length > 0) {
+            return res[0].id;
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+async function updateAccessToken(id, new_access_token) {
+    let conn;
+    try {
+        conn = await getConnection();
+
+        await conn.query('UPDATE users SET access_token = ? WHERE id = ?', [new_access_token, id]);
+    } catch (err) {
+        console.error(err);
+    } finally {
+        if (conn) conn.release();
+    }
+}
+
+// User tokens region end
+
+module.exports = { insertNewUserTokens, getTokensFromUserId, updateAccessToken, getIdFromAccessToken, getIdFromRefreshToken };

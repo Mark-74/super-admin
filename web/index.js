@@ -5,8 +5,8 @@ const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const { register, login } = require('./utils/db');
-const { error } = require('console');
+const { insertNewUserTokens, getTokensFromUserId, getIdFromAccessToken } = require('./utils/db');
+const { getTokensFromNewUser, getDiscordUri } = require('./utils/discord');
 const crypto = require('crypto');
 
 const app = express();
@@ -17,49 +17,72 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'templates'));
 
 //settings for express
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
 
-app.get('/', (req, res) => {
-  res.render('index', { title: 'index' });
-});
+app.get('/', async (req, res) => {
+  // Check if user is authenticated
+  const authCookie = req.cookies.auth;
+  if (!authCookie || !jwt.verify(authCookie, KEY)) {
+    return res.redirect(getDiscordUri());
+  }
 
-app.get('/login', (req, res) => {
-  res.render('login', { title: 'login' });
-});
-
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const success = await login(username, password);
-
-  if (!success) {
-    res.render('login', { title: 'register', error: true, error_message: "Invalid username or password" });
+  // Get user id from cookie
+  const data = jwt.verify(authCookie, KEY);
+  if (!data) {
+    res.status(500).send('Unable to decode cookie');
     return;
   }
 
-  // Set cookie for user
-  const token = jwt.sign({ username }, KEY);
-  res.cookie('token', token, { httpOnly: true });
-  
+  console.log(data);
+
+  // Get tokens from database
+  const tokens = await getTokensFromUserId(data);
+  console.log(tokens);
+
+  res.render('index', { title: 'Home' });
+});
+
+app.get('/callback', async (req, res) => {
+  const { code } = req.query;
+
+  if (!code) {
+    res.status(400).send('Code parameter is missing');
+    return;
+  }
+
+  // Get tokens from Discord
+  let tokens;
+  try {
+    tokens = await getTokensFromNewUser(code);
+    console.log(tokens);
+  }
+  catch (error) {
+    res.status(500).send('Unable to get tokens from Discord');
+    return;
+  }
+
+  console.log(tokens.access_token, tokens.refresh_token, tokens.expires_in); 
+
+  // Insert tokens into database
+  try {
+    await insertNewUserTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in)
+  }
+  catch (error) {
+    res.status(500).send('Unable to insert tokens into the database');
+    return;
+  }
+
+  // Get user id from database
+  const id = await getIdFromAccessToken(tokens.access_token);
+
+  // Verify user's cookie
+  const cookie = jwt.sign(id.toString(), KEY);
+  res.cookie('auth', cookie, { httpOnly: true });
+
   res.redirect('/');
-});
-
-app.get('/register', (req, res) => {
-  res.render('register', { title: 'register' });
-});
-
-app.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-  const success = await register(username, password);
-
-  if (!success) {
-    res.render('register', { title: 'register', error: true, error_message: "Username already in use" });
-    return;
-  }
-
-  res.redirect('/login');
 });
 
 const PORT = 3000;
