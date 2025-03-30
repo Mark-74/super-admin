@@ -2,6 +2,12 @@ const dotenv = require('dotenv');
 const axios = require('axios');
 dotenv.config();
 
+const auth = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString('base64');
+const headers =  {
+    'Authorization': `Basic ${auth}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+}
+
 function getDiscordUri(){
     return process.env.REDIRECT_URI; //TODO: calculate the uri
 }
@@ -13,13 +19,9 @@ async function getTokensFromNewUser(code) {
         'redirect_uri': getDiscordUri(),
     });    
     
-    const auth = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString('base64');
     try {
         const response = await axios.post(`${process.env.API_ENDPOINT}/oauth2/token`, data.toString(), {
-            headers: {
-                'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
+            headers: headers,
         });
         return response.data;
     } catch (error) {
@@ -28,4 +30,21 @@ async function getTokensFromNewUser(code) {
     }    
 }
 
-module.exports = { getTokensFromNewUser };
+async function getTokensFromRefreshToken(refresh_token) {
+    const data = new URLSearchParams({
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+    });
+
+    try {
+        const response = await axios.post(`${process.env.API_ENDPOINT}/oauth2/token`, data.toString(), {
+            headers: headers,
+        });
+        return response.data;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
+module.exports = { getTokensFromNewUser, getTokensFromRefreshToken };
